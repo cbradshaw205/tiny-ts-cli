@@ -1,6 +1,6 @@
 {
   "name": "tiny-ts-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A small, customizable cli for typescript projects.",
   "main": "lib/cli.js",
   "types": "lib/cli.d.js",
