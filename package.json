@@ -1,15 +1,9 @@
 {
   "name": "tiny-ts-cli",
   "version": "1.0.1",
-  "description": "A small, customizable cli for typescript projects.",
-  "main": "lib/cli.js",
-  "types": "lib/cli.d.js",
+  "description": "A small, customizable cli for ts-node typescript projects.",
   "scripts": {
-    "build": "tsc",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "lint": "tslint -p tsconfig.json",
-    "version": "npm run format && git add -A src",
-    "postversion": "git push && git push --tags"
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -18,8 +12,8 @@
   "keywords": [
     "Typescript",
     "Cli",
-    "Project",
-    "Scripts"
+    "ts-node",
+    "executables"
   ],
   "author": "Christian Bradshaw",
   "license": "ISC",
@@ -28,14 +22,17 @@
   },
   "homepage": "https://github.com/cbradshaw205/tiny-ts-cli#readme",
   "devDependencies": {
-    "@types/node": "^18.11.9",
-    "prettier": "^2.7.1",
-    "tslint": "^6.1.3",
-    "tslint-config-prettier": "^1.18.0",
+    "@types/node": "^18.11.17",
     "typescript": "^4.9.3"
   },
   "dependencies": {
-    "commander": "^9.4.1"
+    "chalk": "4.1.2",
+    "commander": "^9.4.1",
+    "log-symbols": "^5.1.0",
+    "ora-classic": "^5.4.2"
   },
-  "type": "module"
+  "main": "cli/cli.ts",
+  "bin": {
+    "tinycli": "./tinycli"
+  }
 }
