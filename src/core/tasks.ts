@@ -1,9 +1,12 @@
 import chalk from "chalk";
-import ora from "ora-classic";
-import { Status } from "../enums/status.enum";
-import { Task } from "../models/task.model";
-import { Logger } from "./logger";
-import { getCursorPos, sleep } from "./utils";
+// import ora from "ora-classic";
+import { Status } from "../enums/status.enum.js";
+import { Task } from "../models/task.model.js";
+import { Logger } from "./logger.js";
+import { sleep } from "./utils.js";
+import * as readline from 'readline';
+import { Service } from "typedi";
+import ora from "ora";
 
 export interface TaskOptions {
   tasks: {
@@ -11,16 +14,19 @@ export interface TaskOptions {
     promise: Promise<any>
   }[];
   group?: string;
-  withConcurrency?: boolean
+  withConcurrency?: boolean;
+  withLogger?: boolean;
 }
 
+@Service()
 export class Tasks {
   private stream: NodeJS.WriteStream;
   private tasks: Task[];
   private position: number; // Position in the terminal
   private numTasks: number;
   private intervalId: NodeJS.Timer;
-  
+  private animationSpeed = 100;
+
   constructor() {
     this.stream = process.stdout;
   };
@@ -49,7 +55,7 @@ export class Tasks {
         idleRender: false
       }
     });
-    this.position = (await getCursorPos()).rows;
+    this.position = 0;
 
     // Group label
     if (group) {
@@ -57,11 +63,11 @@ export class Tasks {
     }
 
     // Render multi spinners
-    this.intervalId = setInterval(this.renderMultiSpinner.bind(this), 100)
-    
+    this.intervalId = setInterval(this.renderMultiSpinner.bind(this), this.animationSpeed);
+
     const results = await this.invokeTasks(!!withConcurrency);
 
-    return results;
+    return [];
   }
 
   private async invokeTasks(withConcurrency: boolean): Promise<any[]> {
@@ -71,7 +77,7 @@ export class Tasks {
       const promises = this.tasks.map(task => this.invokeTask(task));
       results = await Promise.all(promises);
     } else {
-      for (const task of this.tasks) {
+      for await (const task of this.tasks) {
         const result = await this.invokeTask(task);
         results.push(result);
       }
@@ -110,31 +116,47 @@ export class Tasks {
   }
 
   private renderMultiSpinner() {
-    const { tasks, position, stream, numTasks } = this;
-
-    for (const [index, ts] of tasks.entries()) {
-      stream.cursorTo(0, position + index);
-    
-      if (ts.status === Status.loading) {
-        ts.spinner.render();
-      } else if (ts.status === Status.success && !ts.finalRender) {
-        ts.spinner.succeed();
-        ts.finalRender = true;
-      } else if (ts.status === Status.error && !ts.finalRender) {
-        ts.spinner.fail();
-        ts.finalRender = true;
-      } else if (ts.status === Status.idle && !ts.idleRender) {
-        ts.spinner.stopAndPersist({ symbol: '*' });
-        ts.idleRender = true;
-      }
+    if (this.position !== 0) {
+      this.stream.moveCursor(0, -this.numTasks);
+      this.position = 0;
     }
-    stream.cursorTo(0, position + numTasks);
 
-    const status = tasks.map(ts => ts.status);
+    for (const [index, task] of this.tasks.entries()) { 
+      this.position = index;
+      
+      // Move to the position of the spinner, assume task1 = 0th position
+      this.stream.moveCursor(0, index);
+      this.stream.cursorTo(0);
+
+      // Render spinner based on status
+      if (task.status === Status.loading) {
+        task.spinner.render();
+      } else if (task.status === Status.success && !task.finalRender) {
+        task.spinner.succeed();
+        task.finalRender = true;
+        this.position += 1;
+      } else if (task.status === Status.error && !task.finalRender) {
+        task.spinner.fail();
+        task.finalRender = true;
+        this.position += 1;
+      } else if (task.status === Status.idle) {
+        task.spinner.stopAndPersist({ symbol: '*' });
+        task.idleRender = true;
+        this.position += 1;
+      }
+
+      // Go back to the top of the group
+      this.stream.moveCursor(0, -this.position);
+    }
+
+    // After render, move cursor to normal position
+    this.stream.moveCursor(0, this.numTasks);
+    this.stream.cursorTo(0);
   }
 
   private getPrefix(index: number): string {
     let prefix = index === 0 ? '┌─' : index === this.numTasks - 1 ? '└─' : '├─';
     return chalk.grey(prefix);
   };
+
 }

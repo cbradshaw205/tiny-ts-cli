@@ -1,8 +1,9 @@
 import chalk, { Chalk } from "chalk";
-import ora, { Ora } from "ora-classic";
 import { DateTime } from "luxon";
-import { Status } from "../enums/status.enum";
+import { Status } from "../enums/status.enum.js";
 import util from "util";
+import { Service } from "typedi";
+import ora, { Ora } from "ora";
 
 export interface LoggerOptions {
   context?: string;
@@ -10,14 +11,14 @@ export interface LoggerOptions {
   textColor?: Chalk;
   verbose?: boolean;
 }
-
+@Service()
 export class Logger {
   private spinner: Ora;
-  private context: string;
   private color: Chalk;
   private textColor: Chalk;
   private spinnerStatus: Status;
   private verbose: boolean;
+  public context: string;
 
   constructor(options?: LoggerOptions) {
     this.context = options?.context;
@@ -27,6 +28,13 @@ export class Logger {
     this.spinner = ora({ stream: process.stdout });
     this.verbose = !!options?.verbose;
   };
+
+  public setOptions(options: LoggerOptions) {
+    this.context = options.context;
+    this.color = options.color;
+    this.textColor = options.textColor;
+    this.verbose = !!options.verbose;
+  }
 
   public info(message, ...args: any[]) {
     this.log(message, Status.info, args);
@@ -38,6 +46,10 @@ export class Logger {
 
   public error(message, ...args: any[]) {
     this.log(message, Status.error, args);
+  }
+
+  public warn(message, ...args: any[]) {
+    this.log(message, Status.warn, args);
   }
 
   public start() {
@@ -101,6 +113,8 @@ export class Logger {
         return chalk.green('success');
       case Status.info:
         return chalk.blue('info')
+      case Status.warn:
+        return chalk.yellow('warn');
     }
   }
 
@@ -110,16 +124,5 @@ export class Logger {
 
   private getTextColor(str: string) {
     return this.textColor ? this.textColor(str) : str;
-  }
-
-  private getResultType(status: Status) {
-    switch (status) {
-      case Status.success:
-        return this.spinner.succeed.bind(this.spinner)
-      case Status.error:
-        return this.spinner.fail.bind(this.spinner);
-      case Status.info:
-        return this.spinner.info.bind(this.spinner);
-    }
   }
 }

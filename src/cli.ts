@@ -1,58 +1,56 @@
 
-import ora from 'ora-classic';
-import { Command, InvalidArgumentError } from 'commander';
-// import { Script } from './models/script.model.js';
-import { Logger } from './core/logger';
+// TypeDI
+import 'reflect-metadata';
+import { Container } from 'typedi';
+
 import chalk from "chalk";
-
-
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+import { Command, InvalidArgumentError } from 'commander';
+import { Logger } from './core/logger.js';
 
 export const main = async (argv: string[]) => {
   // Argument Validation
   const [command] = argv;
 
-  const spinner = ora({ stream: process.stdout });
-  const logger = new Logger({ context: 'TinyCli', color: chalk.blueBright, verbose: false })
+  const logger = new Logger({ context: 'TinyCli', color: chalk.blueBright })
 
   // Import config
   let config;
   try {
-    const config = require('../tinycli.config.json');
-    
+    // config = await import('../tinycli.config.json');
   } catch (e) {
-    logger.error('%o', e);
+    logger.error('Error importing config.\n%o', e);
   }
 
-
-  let scriptName = null;
+  let script, options;
   if (command === 'run') {
+    const [, name] = argv;
     try {
-      [, scriptName] = argv;
-      logger.start().info(`Importing Module: ${scriptName}`);
-      await sleep(1000);
-      logger.info('Test');
-      await sleep(2000);
-      logger.info('Test2');
-      await sleep(500);
-      logger.stop().error('Error occured: %s', 'Because u suck');
-
+      logger.start().info(`Importing Module...`);
+      const { Script, args } = await import(`../scripts/${name}`);
+      script = Container.get(Script);
+      options = args;
+      logger.stop().success(`Succesfully imported module.`);
     } catch (e) {
-      logger.error(`Error importing Module: ${scriptName}`)
+      logger.stop().error('Cannot import module: %s\n%o', name, e);
+      process.exit(1);
     }
   }
   
-  const cli = new Command();
+  let cli = new Command();
 
   cli.command('run')
   .argument('<name>', 'name of script to run')
   .action(async (options) => {
-    
+    await script.run();
   })
 
-  // cli = generateOptions(cli, args);
+  if (options.length > 0) {
+    cli = generateOptions(cli, options);
+  }
 
   await cli.parseAsync(argv, { from: 'user' });
+
+  return 0;
 };
 
 const generateOptions = (command: Command, options: { name: string, type: string, required: boolean }[]) => {

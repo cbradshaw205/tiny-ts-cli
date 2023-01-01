@@ -1,0 +1,2 @@
+#!/bin/bash
+ts-node --project tsconfig.json src/cli.ts "$@"

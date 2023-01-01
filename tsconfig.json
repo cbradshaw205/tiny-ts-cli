@@ -12,8 +12,15 @@
     "target": "es2019",
     "outDir": "lib",
     "typeRoots": ["./node_modules/@types"],
+    // TypeDI
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    // ts-node
+    "module": "ESNext"
   },
-  "include": ["**/*.ts", "src/core/logger.ts"],
+  "include": ["**/*.ts", "src/core/logger.ts", "src/modules/cli-script.module.ts"],
   "exclude": ["node_modules/**/*"],
-
+  "ts-node": {
+    "esm": true
+  }
 }

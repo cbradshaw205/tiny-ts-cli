@@ -1,5 +1,5 @@
-import { Ora } from "ora-classic";
-import { Status } from "../enums/status.enum";
+import { Ora } from "ora";
+import { Status } from "../enums/status.enum.js";
 
 export interface Task {
   name: string;

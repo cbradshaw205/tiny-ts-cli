@@ -6,4 +6,5 @@ export enum Status {
   info = 5,
   stopped = 6,
   started = 7,
+  warn = 8,
 }
